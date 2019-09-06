@@ -29,17 +29,21 @@ set (REGISTRY_PREFIX agl CACHE STRING "Prefix used in registry entries (prefix.s
 #
 ##############################################
 foreach(subdir bin etc services scriptlets)
+	# get all files in "source" subdirs
 	file(GLOB_RECURSE files LIST_DIRECTORIES false "${subdir}/*")
 	foreach(srcfile ${files})
-		get_filename_component(dstfile ${srcfile} NAME)
+		# compute relative path to source dir
+		file(RELATIVE_PATH dstfile ${CMAKE_CURRENT_SOURCE_DIR} ${srcfile})
 		if(srcfile MATCHES "\\.in$")
+			# will process templates in "GNU" mode (=replacing @xxxx@ by vars)
 			string(REGEX REPLACE "\\.[^.]*$" "" dstfile "${dstfile}")
-			#message("Template file: ${srcfile} => ${dstfile}")
-			configure_file(${srcfile} ${CMAKE_CURRENT_BINARY_DIR}/${subdir}/${dstfile} @ONLY)
+			set(templateopts "@ONLY")
 		else()
-			#message("Non template file: ${srcfile} => ${dstfile}")
-			configure_file(${srcfile} ${CMAKE_CURRENT_BINARY_DIR}/${subdir}/${dstfile} COPYONLY)
+			# no templating: simple copy
+			set(templateopts "COPYONLY")
 		endif()
+		#message("Processing file: ${srcfile} => ${dstfile} (${templateopts})")
+		configure_file(${srcfile} ${CMAKE_CURRENT_BINARY_DIR}/${dstfile} ${templateopts})
 	endforeach()
 endforeach()
 
@@ -70,6 +74,5 @@ install (
 	DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/${PROJECT_NAME}
 	FILE_PERMISSIONS OWNER_READ GROUP_READ
 	DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
-	FILES_MATCHING PATTERN "*"
 )
 
