@@ -1,1 +1,13 @@
+[Unit]
+Description=@PROJECT_NAME@ - devices customization service
+DefaultDependencies=no
+After=platform-devices-detection.service
+Requires=platform-devices-detection.service
+
+[Service]
+Type=oneshot
+ExecStart=@CMAKE_INSTALL_BINDIR@/pr-customize --stage=devices 
+
+[Install]
+WantedBy=multi-user.target
 

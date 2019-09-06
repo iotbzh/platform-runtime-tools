@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Copyright (C) 2018-2019 
+#		Stephane Desneux <stephane.desneux@iot.bzh>
+#		Ronan Le Martret <ronan.lemartret@iot.bzh>
+# Released under the Apache 2.0 license
+
+set -e
+
+SCRIPTNAME=$(basename $BASH_SOURCE)
+VERSION="@pr-tools_VERSION@"
+CONFIGDIR=/etc/platform-info
+
+scriptdir_default=$(cd $(dirname $(realpath $BASH_SOURCE)) && pwd -P)
+
+function info() { echo "$@" >&2; }
+function warning() { echo "WARNING: $@" >&2; }
+function error() { echo "ERROR: $@" >&2; }
+
+function run_script() {
+	local sc=$1; shift
+	info "Running: $sc $@"
+	bash $sc "$@"|| { error "script $sc FAILED with $?"; return 1; }
+
+	# check if script is only for firstboot based on its name
+	# if so, remove it to prevent further executions
+	local n=$(basename $sc)
+	if [[ "$n" =~ ^[0-9]+(FB|firstboot)_ ]]; then
+		info "Removing script $sc (firstboot only)"
+		rm $sc
+	fi
+	return 0
+}
+
+for x in hardware devices; do
+	infos=$CONFIGDIR/$x
+	[[ ! -f $infos ]] && continue;
+	. $infos || { error "Unable to source $infos"; exit 2; }
+done
+
+# --------------------------------------------------------------
+
+# always include 'common' dir
+LISTDIR="${scriptdir_default}/common"
+
+# environment must contain the following variables: CPU_ARCH, SOC_VENDOR, BOARD_MODEL
+CATEGORIES="\
+   CPU_ARCH \
+   SOC_VENDOR \
+   BOARD_MODEL \
+"
+for key in $CATEGORIES; do
+	hwkey="HW_$key"
+
+	[[ -z "${!hwkey}" ]] && { error "$hwkey is not set - please check files in $CONFIGDIR"; exit 1; }
+
+	# map key to folder name
+	case $hwkey in
+		CPU_ARCH)		dirname=arch;;
+		SOC_VENDOR)		dirname=vendor;;
+		BOARD_MODEL)	dirname=board;;
+		*)				dirname=${key,,} # key in lowercase
+	esac
+
+	LISTDIR="${LISTDIR} ${scriptdir_default}/$dirname/${!hwkey}"
+done
+
+# then iterate on each found dir and run scripts inside
+for dir in $LISTDIR; do
+	if [[ -d $dir ]]; then
+		for sc in $(ls $dir);do
+			run_script $dir/$sc
+		done
+	fi
+done

@@ -1,1 +1,14 @@
+[Unit]
+Description=@PROJECT_NAME@ - core customization service
+DefaultDependencies=no
+Before=systemd-modules-load.service
+After=platform-core-detection.service
+Requires=platform-core-detection.service
+
+[Service]
+Type=oneshot
+ExecStart=@CMAKE_INSTALL_BINDIR@/pr-customize --stage=core 
+
+[Install]
+WantedBy=systemd-modules-load.service
 

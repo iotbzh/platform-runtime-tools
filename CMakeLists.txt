@@ -14,8 +14,16 @@ set (UNITDIR_SYSTEM ${CMAKE_INSTALL_LIBDIR}/systemd/system CACHE STRING "Path to
 foreach(subdir bin etc services scriptlets)
 	file(GLOB_RECURSE files LIST_DIRECTORIES false "${subdir}/*")
 	foreach(srcfile ${files})
+		get_filename_component(extension ${srcfile} EXT)
 		get_filename_component(dstfile ${srcfile} NAME)
-		configure_file(${srcfile} ${CMAKE_CURRENT_BINARY_DIR}/${subdir}/${dstfile})
+		if(extension STREQUAL ".in")
+			string(REGEX REPLACE "\\.[^.]*$" "" dstfile "${dstfile}")
+			message("Template file: ${srcfile} => ${dstfile}")
+			configure_file(${srcfile} ${CMAKE_CURRENT_BINARY_DIR}/${subdir}/${dstfile} @ONLY)
+		else()
+			message("Non template file: ${srcfile} => ${dstfile}")
+			configure_file(${srcfile} ${CMAKE_CURRENT_BINARY_DIR}/${subdir}/${dstfile} COPYONLY)
+		endif()
 	endforeach()
 endforeach()
 
@@ -40,9 +48,8 @@ install (
 install (
 	DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/scriptlets
 	DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/${PROJECT_NAME}
+	FILE_PERMISSIONS OWNER_READ GROUP_READ
+	DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
 	FILES_MATCHING PATTERN "*"
 )
-
-
-
 

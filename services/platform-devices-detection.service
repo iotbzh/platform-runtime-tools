@@ -1,1 +1,14 @@
+[Unit]
+Description=@PROJECT_NAME@ - devices detection service
+After=systemd-modules-load.service
+After=platform-core-detection.service
+Requires=platform-core-detection.service
+
+[Service]
+Type=oneshot
+ExecStart=@CMAKE_INSTALL_BINDIR@/pr-detect --stage=devices --output-file=@CMAKE_INSTALL_SYSCONFDIR@/platform-info/devices --json-file=@CMAKE_INSTALL_SYSCONFDIR@/platform-info/devices.json
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
 

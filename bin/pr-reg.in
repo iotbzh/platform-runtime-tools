@@ -1,0 +1,194 @@
+#!/bin/bash
+
+# Copyright (C) 2019
+#		Stephane Desneux <stephane.desneux@iot.bzh>
+# Released under the Apache 2.0 license
+
+set -e
+
+SCRIPTNAME=$(basename $BASH_SOURCE)
+DEBUG=false
+SHOWVER=false
+HELP=false
+FULLHELP=false
+DUMP_ALL=false
+DUMP_KEYS=false
+GLOBAL_CONFIG=/etc/platform-config
+GLOBAL_CONFIG_DIR=${GLOBAL_CONFIG}.d
+HW_INFO=/etc/platform-info/hardware
+EXTRA_CONFIG=
+CONFIG_PREFIX="agl"
+
+VERSION="@pr-tools_VERSION@"
+
+# the associative array to store keys
+declare -A REGISTRY
+
+function info() { echo "$@" >&2; }
+function error() { echo "ERROR: $@" >&2; }
+function warning() { echo "WARNING: $@" >&2; }
+function fatal() { echo "FATAL ERROR: $@" >&2; exit 2; }
+function debug() { $DEBUG && echo "[$BASHPID] $@" >&2 || true; }
+
+function usage() {
+	cat <<EOF >&2
+Usage: $SCRIPTNAME [options] [<key>]
+Version: $VERSION
+
+$SCRIPTNAME retrieves and outputs the values for the requested configuration key.
+
+Options:
+   -c|--config <file>: extra configuration file to load (may be used multiple times)
+   -a|--all: dump the full registry (that can be used like this: $SCRIPTNAME -a | . /dev/stdin)
+   -k|--keys: dump all defined keys
+   -d|--debug: enable debug
+   -V|--version: get version
+   -h|--help|--fullhelp: get help
+
+EOF
+
+	$FULLHELP || return 0
+
+	cat <<EOF >&2
+Default configuration files are:
+   $GLOBAL_CONFIG
+   $GLOBAL_CONFIG_DIR/*
+   kernel command line options starting by '$CONFIG_PREFIX.'
+
+Configuration file syntax:
+* shell style
+* empty lines are allowed
+* comments start with '#' until the end of line
+* variables are named with 3 parts
+   - prefix: '$CONFIG_PREFIX'
+   - domain: defines when variable will be set
+     this can be:
+        - 'common'
+        - a CPU architecture: 'aarch64','x86_64','arm' ...
+		- a SoC vendor: 'Renesas', 'Intel' ...
+		- a board name: 'kingfisher-h3ulcb-r8a7795', 'minnowboard-turbot' ...
+     architectures, vendors, board names are set by platform-hardware-info package
+   - name: the variable name (1 or more alphanumeric characters + underscore: [a-zA-Z0-9_]+)
+* to set a variable, the syntax is:
+    [name]=[value]
+  or if some spaces are required in the value:
+    [name]="[value]"
+  or if it's just a boolean flag set to true:
+    [name]
+* examples:
+    $CONFIG_PREFIX.common.verbose
+    # previous line is equivalent to:
+    $CONFIG_PREFIX.common.verbose=true
+
+    $CONFIG_PREFIX.common.root_password=fbgUx1ap3tCTPBT2
+    $CONFIG_PREFIX.common.binder_loglevel=4
+    $CONFIG_PREFIX.common.welcome_message="Hi there, you're welcome !!!"
+
+    # to restrict to a given architecture/vendor/board:
+    $CONFIG_PREFIX.aarch64.enable_option_foo=true
+    $CONFIG_PREFIX.x86_64.disable_option_bar=true
+
+    $CONFIG_PREFIX.renesas.e3_emulation=true
+    $CONFIG_PREFIX.intel.xeon_for_embedded=true
+    $CONFIG_PREFIX.amd.r1000=true
+    $CONFIG_PREFIX.qualcomm.change_mindset=true
+
+    $CONFIG_PREFIX.kingfisher-h3ulcb-r8a7795.btwilink=off
+    $CONFIG_PREFIX.minnowboard-turbot.builtin_audio=off
+EOF
+}
+
+# parse command line options
+tmp=$(getopt -o c:akdVh --long config:,all,keys,debug,version,help,fullhelp -n $(basename $SCRIPTNAME) -- "$@") || { usage; exit 1; }
+eval set -- $tmp
+while true; do
+	case "$1" in 
+		-a|--all) DUMP_ALL=true; shift;;
+		-k|--keys) DUMP_KEYS=true; shift;;
+		-c|--config) 
+			[[ -r "$2" ]] && EXTRA_CONFIG+=" $2" || fatal "Invalid config file $2"
+			shift 2
+			;;
+		-d|--debug)  DEBUG=true; shift;;
+		-V|--version) SHOWVER=true; shift;;
+		-h|--help)   HELP=true; shift;; 
+		--fullhelp)  HELP=true; FULLHELP=true; shift;; 
+		--) shift; break;;
+		*) fatal "Internal error";;
+	esac
+done
+
+function dump_registry() {
+	for k in $(dump_keys); do 
+		echo "$k=${REGISTRY[$k]@Q}"
+	done
+}
+
+function dump_keys() {
+	for k in ${!REGISTRY[@]}; do
+		echo "$k"
+	done | sort
+}
+
+function getkey() {
+	debug "getkey $1"
+	[[ -v "REGISTRY[$1]" ]] && echo "${REGISTRY[$1]}"
+}
+
+function parse_config() {
+	debug "parse_config"
+	local cond key def 
+	while read -r line; do 
+		debug "line: $line"
+		[[ "$line" =~ ^($CONFIG_PREFIX)\.(common|$HW_CPU_ARCH|$HW_SOC_VENDOR|$HW_BOARD_MODEL)\.([a-zA-Z0-9_]+)([[:space:]]*=[[:space:]]*(.*)[[:space:]]*)?$ ]] || continue
+#		debug "   regexp matches"
+		cond=${BASH_REMATCH[2]}
+#		debug "      cond='$cond'"
+		key=${BASH_REMATCH[3]}
+#		debug "      key='$key'"
+
+		if [[ -z "${BASH_REMATCH[4]}" ]]; then
+			def=true
+		else
+			def=${BASH_REMATCH[5]}
+			[[ "$def" =~ ^\"(.*)\"$ ]] && def=${BASH_REMATCH[1]}
+		fi
+		REGISTRY[$key]=$def
+		debug "      $key='${REGISTRY[$key]}'"
+	done < <(sed -e 's/#.*$//g' -e '/^[[:space:]]*$/d')
+}
+
+$SHOWVER && { echo $VERSION; exit 0; }
+$HELP && { usage $FULLHELP; exit 1; }
+
+[[ -r $HW_INFO ]] && . $HW_INFO || warning "Unable to find hardware info file $HW_INFO. Hardware-specific keys will not be handled."
+
+# load global config file
+[[ -r $GLOBAL_CONFIG ]] && {
+	debug "loading global config from $GLOBAL_CONFIG"
+	parse_config <$GLOBAL_CONFIG
+}
+
+# load all files in GLOBAL_CONFIG_DIR
+for x in $(find $GLOBAL_CONFIG_DIR -type f -maxdepth 1 | sort); do
+	debug "loading config from $x"
+	parse_config <$x
+done
+
+# also parse kernel command line
+debug "Loading config from kernel command line"
+parse_config < <(cat /proc/cmdline | sed 's/[ ]\+/\n/g')
+
+# load extra config files
+for cfg in $EXTRA_CONFIG; do
+	debug "Loading extra config $cfg"
+	parse_config <$cfg
+done
+
+$DUMP_ALL && { dump_registry; exit 0; }
+$DUMP_KEYS && { dump_keys; exit 0; }
+
+[[ "$#" -eq 0 ]] && { error "No key provided on command line"; usage; exit 1; }
+[[ "$#" -gt 1 ]] && { error "More than one key provided on command line"; usage; exit 1; }
+getkey $1 
+

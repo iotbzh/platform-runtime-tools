@@ -1,1 +1,12 @@
+[Unit]
+Description=@PROJECT_NAME@ - core detection service
+DefaultDependencies=no
+Before=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=@CMAKE_INSTALL_BINDIR@/pr-detect --stage=core --output-file=@CMAKE_INSTALL_SYSCONFDIR@/platform-info/core --json-file=@CMAKE_INSTALL_SYSCONFDIR@/platform-info/core.json
+
+[Install]
+WantedBy=systemd-modules-load.service
 

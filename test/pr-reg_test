@@ -1,3 +1,8 @@
 #!/bin/bash
 
-echo "My version: @pr-tools_VERSION@"
+HW_CPU_ARCH=aarch64
+HW_SOC_VENDOR=Renesas
+HW_BOARD_MODEL=kingfisher-h3ulcb-r8a7795
+#HW_BOARD_MODEL=h3ulcb-v1.0.1
+
+. $(dirname $BASH_SOURCE)/../files/pregistry -c $0.conf "$@"
