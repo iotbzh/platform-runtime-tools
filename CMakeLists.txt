@@ -10,6 +10,7 @@ set (pr-tools_VERSION_PATCH 0)
 set (pr-tools_VERSION "${pr-tools_VERSION_MAJOR}.${pr-tools_VERSION_MINOR}.${pr-tools_VERSION_PATCH}")
 
 set (UNITDIR_SYSTEM ${CMAKE_INSTALL_LIBDIR}/systemd/system CACHE STRING "Path to systemd system unit files")
+set (REGISTRY_PREFIX agl CACHE STRING "Prefix used in registry entries (prefix.section.name=value)")
 
 foreach(subdir bin etc services scriptlets)
 	file(GLOB_RECURSE files LIST_DIRECTORIES false "${subdir}/*")

@@ -17,7 +17,7 @@ GLOBAL_CONFIG=/etc/platform-config
 GLOBAL_CONFIG_DIR=${GLOBAL_CONFIG}.d
 HW_INFO=/etc/platform-info/hardware
 EXTRA_CONFIG=
-CONFIG_PREFIX="agl"
+REGISTRY_PREFIX="@REGISTRY_PREFIX@"
 
 VERSION="@pr-tools_VERSION@"
 
@@ -53,14 +53,14 @@ EOF
 Default configuration files are:
    $GLOBAL_CONFIG
    $GLOBAL_CONFIG_DIR/*
-   kernel command line options starting by '$CONFIG_PREFIX.'
+   kernel command line options starting by '$REGISTRY_PREFIX.'
 
 Configuration file syntax:
 * shell style
 * empty lines are allowed
 * comments start with '#' until the end of line
 * variables are named with 3 parts
-   - prefix: '$CONFIG_PREFIX'
+   - prefix: '$REGISTRY_PREFIX'
    - domain: defines when variable will be set
      this can be:
         - 'common'
@@ -76,25 +76,23 @@ Configuration file syntax:
   or if it's just a boolean flag set to true:
     [name]
 * examples:
-    $CONFIG_PREFIX.common.verbose
-    # previous line is equivalent to:
-    $CONFIG_PREFIX.common.verbose=true
+    $REGISTRY_PREFIX.common.verbose
+    $REGISTRY_PREFIX.common.debug=true
 
-    $CONFIG_PREFIX.common.root_password=fbgUx1ap3tCTPBT2
-    $CONFIG_PREFIX.common.binder_loglevel=4
-    $CONFIG_PREFIX.common.welcome_message="Hi there, you're welcome !!!"
+    $REGISTRY_PREFIX.common.root_password=fbgUx1ap3tCTPBT2
+    $REGISTRY_PREFIX.common.binder_loglevel=4
+    $REGISTRY_PREFIX.common.welcome_message="Hi there, you're welcome !!!"
 
     # to restrict to a given architecture/vendor/board:
-    $CONFIG_PREFIX.aarch64.enable_option_foo=true
-    $CONFIG_PREFIX.x86_64.disable_option_bar=true
+    $REGISTRY_PREFIX.aarch64.enable_option_foo=true
+    $REGISTRY_PREFIX.x86_64.disable_option_bar=true
 
-    $CONFIG_PREFIX.renesas.e3_emulation=true
-    $CONFIG_PREFIX.intel.xeon_for_embedded=true
-    $CONFIG_PREFIX.amd.r1000=true
-    $CONFIG_PREFIX.qualcomm.change_mindset=true
+    $REGISTRY_PREFIX.renesas.e3_emulation=true
+    $REGISTRY_PREFIX.intel.xeon_for_embedded=true
+    $REGISTRY_PREFIX.amd.r1000=true
 
-    $CONFIG_PREFIX.kingfisher-h3ulcb-r8a7795.btwilink=off
-    $CONFIG_PREFIX.minnowboard-turbot.builtin_audio=off
+    $REGISTRY_PREFIX.kingfisher-h3ulcb-r8a7795.btwilink=off
+    $REGISTRY_PREFIX.minnowboard-turbot.builtin_audio=off
 EOF
 }
 
@@ -140,7 +138,7 @@ function parse_config() {
 	local cond key def 
 	while read -r line; do 
 		debug "line: $line"
-		[[ "$line" =~ ^($CONFIG_PREFIX)\.(common|$HW_CPU_ARCH|$HW_SOC_VENDOR|$HW_BOARD_MODEL)\.([a-zA-Z0-9_]+)([[:space:]]*=[[:space:]]*(.*)[[:space:]]*)?$ ]] || continue
+		[[ "$line" =~ ^($REGISTRY_PREFIX)\.(common|$HW_CPU_ARCH|$HW_SOC_VENDOR|$HW_BOARD_MODEL)\.([a-zA-Z0-9_]+)([[:space:]]*=[[:space:]]*(.*)[[:space:]]*)?$ ]] || continue
 #		debug "   regexp matches"
 		cond=${BASH_REMATCH[2]}
 #		debug "      cond='$cond'"

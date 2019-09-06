@@ -1,6 +1,48 @@
 # @PROJECT_NAME@ - global registry file
-
-
-
+#
 # Syntax
+# ------
+#
+# * shell style
+# * empty lines are allowed
+# * comments start with '#' until the end of line
+# * variables are named with 3 parts
+#    - prefix: '$CONFIG_PREFIX'
+#    - domain: defines when variable will be set
+#      this can be:
+#       - 'common'
+#       - a CPU architecture: 'aarch64','x86_64','arm' ...
+#       - a SoC vendor: 'Renesas', 'Intel' ...
+#       - a board name: 'kingfisher-h3ulcb-r8a7795', 'minnowboard-turbot' ...
+#      architectures, vendors, board names are set by platform-hardware-info package
+#    - name: the variable name (1 or more alphanumeric characters + underscore: [a-zA-Z0-9_]+)
+# * to set a variable, the syntax is:
+#      [name]=[value]
+#   or if some spaces are required in the value:
+#      [name]="[value]"
+#   or if it's just a boolean flag set to true:
+#      [name]
+#
+# examples:
+#    @REGISTRY_PREFIX@.common.verbose
+#    @REGISTRY_PREFIX@.common.debug=true
+#
+#    @REGISTRY_PREFIX@.common.root_password=fbgUx1ap3tCTPBT2
+#    @REGISTRY_PREFIX@.common.binder_loglevel=4
+#    @REGISTRY_PREFIX@.common.welcome_message="Hi there, you're welcome !!!"
+#
+#    # to restrict to a given architecture:
+#    @REGISTRY_PREFIX@.aarch64.enable_option_foo=true
+#    @REGISTRY_PREFIX@.x86_64.disable_option_bar=true
+#
+#    # to restrict to a given vendor:
+#    @REGISTRY_PREFIX@.renesas.e3_emulation=true
+#    @REGISTRY_PREFIX@.intel.xeon_for_embedded=true
+#    @REGISTRY_PREFIX@.amd.r1000=true
+#
+#    # to restrict to a given board:
+#    @REGISTRY_PREFIX@.kingfisher-h3ulcb-r8a7795.btwilink=off
+#    @REGISTRY_PREFIX@.minnowboard-turbot.builtin_audio=off
+#
+# -----------------------------------------------------------------------------
 
