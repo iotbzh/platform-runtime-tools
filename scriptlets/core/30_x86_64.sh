@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Copyright (C) 2018-2019 
-#		Stephane Desneux <stephane.desneux@iot.bzh>
-#		Ronan Le Martret <ronan.lemartret@iot.bzh>
+# Copyright (C) 2018-2019 IoT.bzh
+# Authors:
+#    Stephane Desneux <stephane.desneux@iot.bzh>
+#    Ronan Le Martret <ronan.lemartret@iot.bzh>
 # Released under the Apache 2.0 license
 
 detect_arch() {

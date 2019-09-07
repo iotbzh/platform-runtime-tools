@@ -1,11 +1,21 @@
 #!/bin/bash
 
-# Copyright (C) 2019
-#		Stephane Desneux <stephane.desneux@iot.bzh>
+# Copyright (C) 2019 IoT.bzh
+# Authors:
+#    Stephane Desneux <stephane.desneux@iot.bzh>
+#    Ronan Le Martret <ronan.lemartret@iot.bzh>
 # Released under the Apache 2.0 license
 
 set -e
 
+# project vars
+VERSION="@pr-tools_VERSION@"
+REGISTRY_PREFIX="@REGISTRY_PREFIX@"
+GLOBAL_CONFIG=@CMAKE_INSTALL_SYSCONFDIR@/@PROJECT_NAME@/registry.conf
+GLOBAL_CONFIG_DIR=${GLOBAL_CONFIG}.d
+CORE_INFO=@DETECTION_OUTPUT_DIR@/core
+
+# script vars
 SCRIPTNAME=$(basename $BASH_SOURCE)
 DEBUG=false
 SHOWVER=false
@@ -13,13 +23,7 @@ HELP=false
 FULLHELP=false
 DUMP_ALL=false
 DUMP_KEYS=false
-GLOBAL_CONFIG=/etc/platform-config
-GLOBAL_CONFIG_DIR=${GLOBAL_CONFIG}.d
-HW_INFO=/etc/platform-info/hardware
 EXTRA_CONFIG=
-REGISTRY_PREFIX="@REGISTRY_PREFIX@"
-
-VERSION="@pr-tools_VERSION@"
 
 # the associative array to store keys
 declare -A REGISTRY
@@ -159,7 +163,7 @@ function parse_config() {
 $SHOWVER && { echo $VERSION; exit 0; }
 $HELP && { usage $FULLHELP; exit 1; }
 
-[[ -r $HW_INFO ]] && . $HW_INFO || warning "Unable to find hardware info file $HW_INFO. Hardware-specific keys will not be handled."
+[[ -r $CORE_INFO ]] && . $CORE_INFO || warning "Unable to find core info file $CORE_INFO. Hardware-specific keys will not be handled."
 
 # load global config file
 [[ -r $GLOBAL_CONFIG ]] && {
@@ -168,10 +172,14 @@ $HELP && { usage $FULLHELP; exit 1; }
 }
 
 # load all files in GLOBAL_CONFIG_DIR
-for x in $(find $GLOBAL_CONFIG_DIR -type f -maxdepth 1 | sort); do
-	debug "loading config from $x"
-	parse_config <$x
-done
+if [[ -d "$GLOBAL_CONFIG_DIR" ]]; then
+	for x in $(find $GLOBAL_CONFIG_DIR -maxdepth 1 -type f | sort); do
+		debug "loading config from $x"
+		parse_config <$x
+	done
+else
+	warning "$GLOBAL_CONFIG_DIR doesn't exist. Skipping parsing on global config dir files."
+fi
 
 # also parse kernel command line
 debug "Loading config from kernel command line"

@@ -22,6 +22,9 @@ set (UNITDIR_SYSTEM ${CMAKE_INSTALL_LIBDIR}/systemd/system CACHE STRING "Path to
 # prefix (mostly for pr-registry)
 set (REGISTRY_PREFIX agl CACHE STRING "Prefix used in registry entries (prefix.section.name=value)")
 
+# detection results dir
+set (DETECTION_OUTPUT_DIR ${CMAKE_INSTALL_SYSCONFDIR}/platform-info CACHE STRING "Runtime folder where detection results will be stored")
+
 ############### IMPORTANT NOTE ###############
 #
 # files with extension '.in' are considered as templates and will be processed accordingly

@@ -5,4 +5,19 @@ HW_SOC_VENDOR=Renesas
 HW_BOARD_MODEL=kingfisher-h3ulcb-r8a7795
 #HW_BOARD_MODEL=h3ulcb-v1.0.1
 
-. $(dirname $BASH_SOURCE)/../files/pregistry -c $0.conf "$@"
+tmpscript=$(mktemp)
+function testecho() { echo "----------------- TESTSCRIPT: $@ --------------------" >&2; }
+
+testecho "START $tmpscript"
+trap "testecho 'QUIT (trap)'; rm -v $tmpscript >&2" STOP INT QUIT EXIT
+
+sed \
+	-e 's|@pr-tools_VERSION@|0.0.1|g' \
+	-e 's|@REGISTRY_PREFIX@|agl|g' \
+	-e 's|@CMAKE_INSTALL_SYSCONFDIR@|/tmp|g' \
+	-e 's|@PROJECT_NAME@|pr-tools|g' \
+	-e 's|@DETECTION_OUTPUT_DIR@|/tmp|g' \
+	$(dirname $BASH_SOURCE)/../bin/pr-registry.in >$tmpscript
+
+testecho "using extra conf $(realpath $0.conf)"
+. $tmpscript -c $0.conf "$@"
