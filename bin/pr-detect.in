@@ -8,8 +8,17 @@
 
 set -e
 
-SCRIPTNAME=$(basename $BASH_SOURCE)
+# project vars
 VERSION="@pr-tools_VERSION@"
+REGISTRY_PREFIX="@REGISTRY_PREFIX@"
+GLOBAL_CONFIG=@CMAKE_INSTALL_SYSCONFDIR@/@PROJECT_NAME@/registry.conf
+GLOBAL_CONFIG_DIR=${GLOBAL_CONFIG}.d
+CORE_INFO=@DETECTION_OUTPUT_DIR@/core
+
+# script vars
+SCRIPTNAME=$(basename $BASH_SOURCE)
+DEBUG=false
+HELP=false
 
 shout_default=/etc/platform-info/hardware
 shout=$shout_default
@@ -18,9 +27,11 @@ jsonout=$jsonout_default
 fragdir_default=$(cd $(dirname $(realpath $BASH_SOURCE))/hw-detect.d && pwd -P)
 fragdir=$fragdir_default
 
-function info() { echo "$(basename $BASH_SOURCE) - $@" >&2; }
-function error() { echo "$(basename $BASH_SOURCE) - ERROR: $@" >&2; }
-function fatal() { echo "$(basename $BASH_SOURCE) - FATAL: $@" >&2; exit 1; }
+function info() { echo "$@" >&2; }
+function error() { echo "ERROR: $@" >&2; }
+function warning() { echo "WARNING: $@" >&2; }
+function fatal() { echo "FATAL ERROR: $@" >&2; exit 2; }
+function debug() { $DEBUG && echo "[$BASHPID] $@" >&2 || true; }
 
 # ------------------------ SH/JSON output funcs ------------------------
 
@@ -139,7 +150,7 @@ function out_value() {
 
 # --------------------------------------------------------------
 
-function __usage() {
+function usage() {
 	cat <<EOF >&2
 Usage: $SCRIPTNAME <option>
    Options:
@@ -152,14 +163,14 @@ EOF
 
 tmp=$(getopt -o h,o:,j:,d: --long help,output-file:,json-file:,fragments-dir: -n "$SCRIPTNAME" -- "$@") || {
 	error "Invalid arguments."
-	__usage
+	usage
 	exit 1
 }
 eval set -- $tmp
 
 while true; do
 	case "$1" in
-		-h|--help) __usage; exit 0;;
+		-h|--help) usage; exit 0;;
 		-o|--output-file) shout=$2; shift 2;;
 		-j|--json-file) jsonout=$2; shift 2;;
 		-d|--fragments-dir) fragdir=$2; shift 2;;
