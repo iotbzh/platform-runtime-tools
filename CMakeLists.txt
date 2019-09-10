@@ -18,6 +18,7 @@ set (pr-tools_VERSION "${pr-tools_VERSION_MAJOR}.${pr-tools_VERSION_MINOR}.${pr-
 
 # systemd location for system services
 set (UNITDIR_SYSTEM ${CMAKE_INSTALL_LIBDIR}/systemd/system CACHE STRING "Path to systemd system unit files")
+set (SCRIPTSDIR ${CMAKE_INSTALL_LIBEXECDIR}/${PROJECT_NAME} CACHE STRING "Path to install scriptlets")
 
 # prefix (mostly for pr-registry)
 set (REGISTRY_PREFIX agl CACHE STRING "Prefix used in registry entries (prefix.section.name=value)")
@@ -71,11 +72,20 @@ install (
 	DESTINATION ${UNITDIR_SYSTEM}
 )
 
-####### install scriptlets (libexec) ######
-install (
-	DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/scriptlets
-	DESTINATION ${CMAKE_INSTALL_LIBEXECDIR}/${PROJECT_NAME}
-	FILE_PERMISSIONS OWNER_READ GROUP_READ
-	DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
-)
+####### install scripts ######
+# scripts are split in two parts:
+# - detection scripts (for various stages: core, devices, ...) run by pr-detect
+# - customization scripts run by pr-customize (not provided here, so installed as an empty folder)
+
+FILE(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/scriptlets/customize)
+
+foreach(subdir detect customize)
+	install (
+		DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/scriptlets/${subdir}
+		DESTINATION ${SCRIPTSDIR}/
+		FILE_PERMISSIONS OWNER_READ GROUP_READ
+		DIRECTORY_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE
+	)
+endforeach()
+
 
