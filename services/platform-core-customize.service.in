@@ -7,7 +7,7 @@ Requires=platform-core-detection.service
 
 [Service]
 Type=oneshot
-ExecStart=@CMAKE_INSTALL_BINDIR@/pr-customize --stage=core 
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/pr-customize --step=core 
 
 [Install]
 WantedBy=systemd-modules-load.service

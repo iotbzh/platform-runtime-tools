@@ -6,8 +6,7 @@ Requires=platform-core-detection.service
 
 [Service]
 Type=oneshot
-ExecStart=@CMAKE_INSTALL_BINDIR@/pr-detect --stage=devices --output-file=@CMAKE_INSTALL_SYSCONFDIR@/platform-info/devices --json-file=@CMAKE_INSTALL_SYSCONFDIR@/platform-info/devices.json
-RemainAfterExit=yes
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/pr-detect --step=devices --output-file=@DETECTION_OUTPUT_DIR@/devices --json-file=@DETECTION_OUTPUT_DIR@/devices.json
 
 [Install]
 WantedBy=multi-user.target

@@ -98,7 +98,7 @@ HW_WIFI_DEVICES="wlan0"
 (TODO: fill topics)
 - pr-customize tool
 - goal
-- stages
+- steps (core, devices, ...)
 - scripts location
 - firstboot
 - example scriptlet

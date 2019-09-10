@@ -15,6 +15,7 @@ sed \
 	-e 's|@pr-tools_VERSION@|0.0.1|g' \
 	-e 's|@REGISTRY_PREFIX@|agl|g' \
 	-e 's|@CMAKE_INSTALL_SYSCONFDIR@|/tmp|g' \
+	-e 's|@CMAKE_INSTALL_FULL_SYSCONFDIR@|/tmp|g' \
 	-e 's|@PROJECT_NAME@|pr-tools|g' \
 	-e 's|@DETECTION_OUTPUT_DIR@|/tmp|g' \
 	$(dirname $BASH_SOURCE)/../bin/pr-registry.in >$tmpscript

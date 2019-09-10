@@ -3,7 +3,6 @@
 # Copyright (C) 2019 IoT.bzh
 # Authors:
 #    Stephane Desneux <stephane.desneux@iot.bzh>
-#    Ronan Le Martret <ronan.lemartret@iot.bzh>
 # Released under the Apache 2.0 license
 
 set -e
@@ -11,7 +10,7 @@ set -e
 # project vars
 VERSION="@pr-tools_VERSION@"
 REGISTRY_PREFIX="@REGISTRY_PREFIX@"
-GLOBAL_CONFIG=@CMAKE_INSTALL_SYSCONFDIR@/@PROJECT_NAME@/registry.conf
+GLOBAL_CONFIG=@CMAKE_INSTALL_FULL_SYSCONFDIR@/@PROJECT_NAME@/registry.conf
 GLOBAL_CONFIG_DIR=${GLOBAL_CONFIG}.d
 CORE_INFO=@DETECTION_OUTPUT_DIR@/core
 
@@ -42,12 +41,12 @@ Version: $VERSION
 $SCRIPTNAME retrieves and outputs the values for the requested configuration key.
 
 Options:
+   -h|--help|--fullhelp: get help
+   -V|--version: get version
+   -d|--debug: enable debug
    -c|--config <file>: extra configuration file to load (may be used multiple times)
    -a|--all: dump the full registry (that can be used like this: $SCRIPTNAME -a | . /dev/stdin)
    -k|--keys: dump all defined keys
-   -d|--debug: enable debug
-   -V|--version: get version
-   -h|--help|--fullhelp: get help
 
 EOF
 
@@ -101,7 +100,11 @@ EOF
 }
 
 # parse command line options
-tmp=$(getopt -o c:akdVh --long config:,all,keys,debug,version,help,fullhelp -n $(basename $SCRIPTNAME) -- "$@") || { usage; exit 1; }
+tmp=$(getopt -o c:akdVh --long config:,all,keys,debug,version,help,fullhelp -n $(basename $SCRIPTNAME) -- "$@") || {
+	error "Invalid arguments."
+	usage
+	exit 1
+}
 eval set -- $tmp
 while true; do
 	case "$1" in 
@@ -111,10 +114,10 @@ while true; do
 			[[ -r "$2" ]] && EXTRA_CONFIG+=" $2" || fatal "Invalid config file $2"
 			shift 2
 			;;
-		-d|--debug)  DEBUG=true; shift;;
+		-d|--debug) DEBUG=true; shift;;
 		-V|--version) SHOWVER=true; shift;;
-		-h|--help)   HELP=true; shift;; 
-		--fullhelp)  HELP=true; FULLHELP=true; shift;; 
+		-h|--help) HELP=true; shift;; 
+		--fullhelp) HELP=true; FULLHELP=true; shift;; 
 		--) shift; break;;
 		*) fatal "Internal error";;
 	esac

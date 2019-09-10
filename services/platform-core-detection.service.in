@@ -5,7 +5,7 @@ Before=systemd-modules-load.service
 
 [Service]
 Type=oneshot
-ExecStart=@CMAKE_INSTALL_BINDIR@/pr-detect --stage=core --output-file=@CMAKE_INSTALL_SYSCONFDIR@/platform-info/core --json-file=@CMAKE_INSTALL_SYSCONFDIR@/platform-info/core.json
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/pr-detect --step=core --output-file=@DETECTION_OUTPUT_DIR@/core --json-file=@DETECTION_OUTPUT_DIR@/core.json
 
 [Install]
 WantedBy=systemd-modules-load.service

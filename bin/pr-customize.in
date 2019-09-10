@@ -8,15 +8,56 @@
 
 set -e
 
-SCRIPTNAME=$(basename $BASH_SOURCE)
+# project vars
 VERSION="@pr-tools_VERSION@"
-CONFIGDIR=/etc/platform-info
+SCRIPTS_DIR=@SCRIPTS_DIR@/customize
+DETECTION_OUTPUT_DIR=@DETECTION_OUTPUT_DIR@
+ALLSTEPS="core devices"
 
-scriptdir_default=$(cd $(dirname $(realpath $BASH_SOURCE)) && pwd -P)
+# script vars
+SCRIPTNAME=$(basename $BASH_SOURCE)
+DEBUG=false
+SHOWVER=false
+HELP=false
 
 function info() { echo "$@" >&2; }
-function warning() { echo "WARNING: $@" >&2; }
 function error() { echo "ERROR: $@" >&2; }
+function warning() { echo "WARNING: $@" >&2; }
+function fatal() { echo "FATAL ERROR: $@" >&2; exit 2; }
+function debug() { $DEBUG && echo "[$BASHPID] $@" >&2 || true; }
+
+function usage() {
+	cat <<EOF >&2
+Usage: $SCRIPTNAME <option>
+
+Options:
+   -h|--help|--fullhelp: get help
+   -V|--version: get version
+   -d|--debug: enable debug
+   -s|--step <name|dir>: set detection step by name or by directory (mandatory)
+      If a name is given, a folder named $SCRIPTS_DIR/<name> is used for detection scripts.
+      If a directory is given, it's used directly.
+      Common names are: 'core','devices'
+EOF
+}
+
+tmp=$(getopt -o h,V,d,s: --long help,version,debug,step: -n "$SCRIPTNAME" -- "$@") || {
+	error "Invalid arguments."
+	usage
+	exit 1
+}
+eval set -- $tmp
+while true; do
+	case "$1" in
+		-s|--step) STEP=$2; shift 2;;
+		-d|--debug) DEBUG=true; shift;;
+		-V|--version) SHOWVER=true; shift;;
+		-h|--help) HELP=true; shift;; 
+		--) shift; break;;
+		*) fatal "Internal error";;
+	esac
+done
+
 
 function run_script() {
 	local sc=$1; shift
@@ -33,16 +74,25 @@ function run_script() {
 	return 0
 }
 
-for x in hardware devices; do
-	infos=$CONFIGDIR/$x
+# --------------------------------------------------------------
+
+$SHOWVER && { echo $VERSION; exit 0; }
+$HELP && { usage; exit 1; }
+
+[[ -n "$STEP" && -d "$SCRIPTS_DIR/$STEP" ]] && STEP="$SCRIPTS_DIR/$STEP" 
+[[ ! -d "$STEP" ]] && { error "Invalid step directory or name '$STEP'"; usage; exit 1; }
+
+debug "Resolved scripts folder: STEP=$STEP"
+
+for x in $ALLSTEPS; do
+	infos=$DETECTION_OUTPUT_DIR/$x
 	[[ ! -f $infos ]] && continue;
+	debug "Sourcing $infos"
 	. $infos || { error "Unable to source $infos"; exit 2; }
 done
 
-# --------------------------------------------------------------
-
 # always include 'common' dir
-LISTDIR="${scriptdir_default}/common"
+LISTDIR="${SCRIPTS_DIR}/common"
 
 # environment must contain the following variables: CPU_ARCH, SOC_VENDOR, BOARD_MODEL
 CATEGORIES="\
@@ -63,10 +113,11 @@ for key in $CATEGORIES; do
 		*)				dirname=${key,,} # key in lowercase
 	esac
 
-	LISTDIR="${LISTDIR} ${scriptdir_default}/$dirname/${!hwkey}"
+	LISTDIR="${LISTDIR} ${SCRIPTS_DIR}/$dirname/${!hwkey}"
 done
 
 # then iterate on each found dir and run scripts inside
+debug "LISTDIR: $LISTDIR"
 for dir in $LISTDIR; do
 	if [[ -d $dir ]]; then
 		for sc in $(ls $dir);do

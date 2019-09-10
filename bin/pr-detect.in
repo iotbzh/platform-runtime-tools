@@ -10,28 +10,60 @@ set -e
 
 # project vars
 VERSION="@pr-tools_VERSION@"
-REGISTRY_PREFIX="@REGISTRY_PREFIX@"
-GLOBAL_CONFIG=@CMAKE_INSTALL_SYSCONFDIR@/@PROJECT_NAME@/registry.conf
-GLOBAL_CONFIG_DIR=${GLOBAL_CONFIG}.d
-CORE_INFO=@DETECTION_OUTPUT_DIR@/core
+SCRIPTS_DIR=@SCRIPTS_DIR@/detect
 
 # script vars
 SCRIPTNAME=$(basename $BASH_SOURCE)
 DEBUG=false
+SHOWVER=false
 HELP=false
-
-shout_default=/etc/platform-info/hardware
-shout=$shout_default
-jsonout_default=/etc/platform-info/hardware.json
-jsonout=$jsonout_default
-fragdir_default=$(cd $(dirname $(realpath $BASH_SOURCE))/hw-detect.d && pwd -P)
-fragdir=$fragdir_default
+SHELL_OUT=/dev/stdout
+JSON_OUT=
+STEP=
+declare -A __keys
 
 function info() { echo "$@" >&2; }
 function error() { echo "ERROR: $@" >&2; }
 function warning() { echo "WARNING: $@" >&2; }
 function fatal() { echo "FATAL ERROR: $@" >&2; exit 2; }
 function debug() { $DEBUG && echo "[$BASHPID] $@" >&2 || true; }
+
+function usage() {
+	cat <<EOF >&2
+Usage: $SCRIPTNAME <option>
+
+Options:
+   -h|--help|--fullhelp: get help
+   -V|--version: get version
+   -d|--debug: enable debug
+   -s|--step <name|dir>: set detection step by name or by directory (mandatory)
+      If a name is given, a folder named $SCRIPTS_DIR/<name> is used for detection scripts.
+      If a directory is given, it's used directly.
+      Common names are: 'core','devices'
+   -o|--output-file <file>: generate output file in SHELL format (default: stdout)
+   -j|--json-file <file>: generate output file in JSON format (optional)
+
+EOF
+}
+
+tmp=$(getopt -o h,V,d,s:,o:,j: --long help,version,debug,step:,output-file:,json-file: -n "$SCRIPTNAME" -- "$@") || {
+	error "Invalid arguments."
+	usage
+	exit 1
+}
+eval set -- $tmp
+while true; do
+	case "$1" in
+		-s|--step) STEP=$2; shift 2;;
+		-o|--output-file) SHELL_OUT=$2; shift 2;;
+		-j|--json-file) JSON_OUT=$2; shift 2;;
+		-d|--debug) DEBUG=true; shift;;
+		-V|--version) SHOWVER=true; shift;;
+		-h|--help) HELP=true; shift;; 
+		--) shift; break;;
+		*) fatal "Internal error";;
+	esac
+done
 
 # ------------------------ SH/JSON output funcs ------------------------
 
@@ -150,58 +182,15 @@ function out_value() {
 
 # --------------------------------------------------------------
 
-function usage() {
-	cat <<EOF >&2
-Usage: $SCRIPTNAME <option>
-   Options:
-      -h|--help: output this help
-	  -o|--output-file <file>: generate output file in SHELL format (default: $shout_default)
-	  -j|--json-file <file>: generate output file in JSON format (default: $jsonout_default)
-	  -d|--fragments-dir <dir>: specify location of fragments to execute (default: $fragdir_default)
-EOF
-}
-
-tmp=$(getopt -o h,o:,j:,d: --long help,output-file:,json-file:,fragments-dir: -n "$SCRIPTNAME" -- "$@") || {
-	error "Invalid arguments."
-	usage
-	exit 1
-}
-eval set -- $tmp
-
-while true; do
-	case "$1" in
-		-h|--help) usage; exit 0;;
-		-o|--output-file) shout=$2; shift 2;;
-		-j|--json-file) jsonout=$2; shift 2;;
-		-d|--fragments-dir) fragdir=$2; shift 2;;
-		--) shift; break;;
-		*) fatal "Internal error";;
-	esac
-done
-
-[[ -f $shout ]] && rm $shout
-[[ -f $jsonout ]] && rm $jsonout
-
-info "Generating shell format in $shout"
-info "Generating json format in $jsonout"
-
-declare -A __keys
-
 function addkey() {
 	local k=$1
 	shift
 	[[ -z "$k" ]] && return 1
+	debug "Add key $k=$@"
 	__keys[$k]="$@"
 }
 
 function readkey() { [[ -f $1 ]] && cat $1 || echo "unknown"; }
-
-# run all fragments in specified fragment dir
-[[ ! -d $fragdir ]] && { error "Invalid fragments dir '$fragdir'."; exit 1; }
-for x in $(ls $fragdir/??[._]* 2>/dev/null); do
-	info "Executing $x"
-	. $x
-done
 
 function __generate_output() {
 	fmt=$1
@@ -226,9 +215,42 @@ function __generate_output() {
 		echo ${__keys[$x]}
 	done | out_object $fmt
 }
-__generate_output bash >$shout
-chsmack -A $shout
-__generate_output json >$jsonout
-chsmack -A $jsonout
+
+function __smackdrop() {
+	[[ -f "$1" ]] && { debug "Dropping SMACK label for $1"; chsmack -A $1; }
+}
+
+# --------------------------------------------------------------
+
+$SHOWVER && { echo $VERSION; exit 0; }
+$HELP && { usage; exit 1; }
+
+[[ -n "$STEP" && -d "$SCRIPTS_DIR/$STEP" ]] && STEP="$SCRIPTS_DIR/$STEP" 
+[[ ! -d "$STEP" ]] && fatal "Invalid step directory or name '$STEP'"
+
+debug "Resolved scripts folder: STEP=$STEP"
+
+# run all fragments in specified fragment dir
+for x in $(ls $STEP); do
+	info "Executing $x"
+	. $STEP/$x
+	if [[ "$x" =~ ^[0-9]+(FB|firstboot)_ ]]; then
+		info "Removing script $x (firstboot only)"
+		rm $STEP/$x
+	fi
+done
+
+# generate outputs
+[[ -n "$SHELL_OUT" ]] && {
+	info "Generating shell format in $SHELL_OUT"
+	__generate_output bash >$SHELL_OUT
+	__smackdrop $SHELL_OUT
+}
+
+[[ -n "$JSON_OUT" ]] && {
+	info "Generating json format in $JSON_OUT"
+	__generate_output json >$JSON_OUT
+	__smackdrop $JSON_OUT
+}
 
 

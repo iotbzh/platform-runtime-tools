@@ -6,7 +6,7 @@ Requires=platform-devices-detection.service
 
 [Service]
 Type=oneshot
-ExecStart=@CMAKE_INSTALL_BINDIR@/pr-customize --stage=devices 
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/pr-customize --step=devices 
 
 [Install]
 WantedBy=multi-user.target
