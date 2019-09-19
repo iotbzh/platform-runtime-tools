@@ -9,5 +9,5 @@ Type=oneshot
 ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/pr-customize --step=devices 
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=basic.target
 
