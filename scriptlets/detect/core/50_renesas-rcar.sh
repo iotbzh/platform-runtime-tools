@@ -7,6 +7,7 @@
 # Released under the Apache 2.0 license
 
 detect_renesas() {
+	[[ ! -f /sys/devices/soc0/family ]] && return 0;
 	[[ ! "$(cat /sys/devices/soc0/family)" =~ ^R-Car ]] && return 0;
 	info "R-Car SoC family detected."
 
@@ -65,10 +66,6 @@ detect_renesas() {
 	keys[soc_revision]=$(readkey /sys/devices/soc0/revision)
 
 	# detect cpu
-	keys[cpu_arch]="unknown"
-	[[ "$(grep MODALIAS /sys/devices/system/cpu/cpu0/uevent)" =~ :type:([^:]+):.*$ ]] && {
-		keys[cpu_arch]=${BASH_REMATCH[1]}
-	}
 	keys[cpu_freq_mhz]=$(readkey /sys/devices/system/cpu/cpufreq/policy0/cpuinfo_max_freq)
 	if [ ${keys[cpu_freq_mhz]} != "unknown" ]
 	then keys[cpu_freq_mhz]=$((${keys[cpu_freq_mhz]}/1000))

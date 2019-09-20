@@ -25,13 +25,13 @@ detect_intel() {
 	keys[cpu_freq_mhz]=$(dmidecode --type processor | grep -m1 "Max Speed" | awk -F": " '{print $2}' | awk '{print $1;}')
 	#On Intel recent arch, L1 and L2 are per CPU core and L3 is optionnal and shared by all core.
 	CPU_COUNT=$(getconf _NPROCESSORS_CONF)
-	CPU_CACHE_L1=$(cat /sys/devices/system/cpu/cpu0/cache/index1/size)
+	CPU_CACHE_L1=$(readkey /sys/devices/system/cpu/cpu0/cache/index1/size)
 	CPU_CACHE_L1=${CPU_CACHE_L1%?}
-	CPU_CACHE_L2=$(cat /sys/devices/system/cpu/cpu0/cache/index2/size)
+	CPU_CACHE_L2=$(readkey /sys/devices/system/cpu/cpu0/cache/index2/size)
 	CPU_CACHE_L2=${CPU_CACHE_L2%?}
 	if [ -f /sys/devices/system/cpu/cpu0/cache/index3/size ]
 	then
-		CPU_CACHE_L3=$(cat /sys/devices/system/cpu/cpu0/cache/index3/size)
+		CPU_CACHE_L3=$(readkey /sys/devices/system/cpu/cpu0/cache/index3/size)
 		CPU_CACHE_L3=${CPU_CACHE_L3%?}
 	else
 		CPU_CACHE_L3=0
