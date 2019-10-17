@@ -45,7 +45,7 @@ Options:
    -V|--version: get version
    -d|--debug: enable debug
    -c|--config <file>: extra configuration file to load (may be used multiple times)
-   -a|--all: dump the full registry (that can be used like this: $SCRIPTNAME -a | . /dev/stdin)
+   -a|--all: dump the full registry (this can be used in bash: source <($SCRIPTNAME -a) )
    -k|--keys: dump all defined keys
 
 EOF
