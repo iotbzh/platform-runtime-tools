@@ -20,7 +20,6 @@ detect_intel() {
 	keys[soc_revision]=$(cat /proc/cpuinfo | grep -m1 "stepping" | awk -F": " '{print $2}')
 
 	# cpu information
-	keys[cpu_microarch]=$(readkey /sys/devices/cpu/caps/pmu_name)
 	keys[cpu_compatibility]="unknown"
 	keys[cpu_freq_mhz]=$(dmidecode --type processor | grep -m1 "Max Speed" | awk -F": " '{print $2}' | awk '{print $1;}')
 	#On Intel recent arch, L1 and L2 are per CPU core and L3 is optionnal and shared by all core.
@@ -54,25 +53,14 @@ detect_intel() {
 	case ${keys[soc_id]} in
 		E3826)
 			keys[board_model]="Minnowboard Turbot"	
-			lspci | grep -i "i211" > /dev/null
-			if [ $? = 0 ]
-			then keys[board_model]=${keys[board_model]}" B"
-			else keys[board_model]=${keys[board_model]}" A"
+			if lspci | grep -iq "i211"; then
+				keys[board_model]=${keys[board_model]}" B Dual-Core"
+			else
+				keys[board_model]=${keys[board_model]}" A Dual-Core"
 			fi
 
-			NB_ETH_CTL=$(echo "${keys[ethernet_devices]}" | wc -w)
-			if [ $NB_ETH_CTL == 1 ]
-			then keys[board_model]=${keys[board_model]}" Dual-Core"
-			else keys[board_model]=${keys[board_model]}" Dual-Core Dual Ethernet"
-			fi
-			;;	
 		E3845)
 			keys[board_model]="Minnowboard Turbot B Quad-Core"		
-
-			NB_ETH_CTL=$(echo "${keys[ethernet_devices]}" | wc -w)
-			if [ $NB_ETH_CTL == 2 ]
-			then keys[board_model]=${keys[board_model]}" Dual Ethernet"
-			fi
 			;;
 		*)
 			keys[board_model]="unknown"

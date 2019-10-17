@@ -17,7 +17,7 @@ detect_raspberry() {
 	keys[soc_vendor]="Raspberry"
 	keys[soc_family]="unknown"
 
-	keys[soc_id]="unknown"
+	keys[soc_id]="bcm-xxxx"
 
 	keys[soc_name]="unknown"
 	keys[cpu_cache_kb]="unknown"

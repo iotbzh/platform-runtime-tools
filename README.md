@@ -124,6 +124,17 @@ The files are spread like this:
 
 #### Common Keys
 
+* board_model
+* soc_id
+* soc_name
+* soc_vendor
+* soc_family
+* soc_revision
+* gpu_name
+* cpu_freq_mhz
+* cpu_compatibility
+* cpu_cache_kb
+
 (TODO)
 
 #### Optional Keys
@@ -147,6 +158,24 @@ HW_CPU_CACHE_KB=3044
 HW_SOC_REVISION="ES2.0"
 HW_SOC_VENDOR="renesas"
 HW_BOARD_MODEL="kingfisher-h3ulcb-r8a7795"
+```
+#### Core output example for Raspberry PI 3 board
+
+```bash
+# cat /etc/platform-info/core
+HW_CPU_COUNT=4
+HW_MEMORY_TOTAL_MB=873
+HW_SOC_FAMILY="unknown"
+HW_CPU_ARCH="armv7l"
+HW_SOC_NAME="unknown"
+HW_CPU_FREQ_MHZ=1200
+HW_SOC_ID="bcm-xxxx"
+HW_CPU_COMPATIBILITY="cortex-a53"
+HW_GPU_NAME="bcm2835-vc4"
+HW_CPU_CACHE_KB="unknown"
+HW_SOC_REVISION="unknown"
+HW_BOARD_MODEL="3-model-b-bcm2837"
+HW_SOC_VENDOR="raspberry"
 ```
 
 ### Generated devices info
