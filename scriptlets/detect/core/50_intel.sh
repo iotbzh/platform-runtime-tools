@@ -58,6 +58,7 @@ detect_intel() {
 			else
 				keys[board_model]=${keys[board_model]}" A Dual-Core"
 			fi
+			;;
 
 		E3845)
 			keys[board_model]="Minnowboard Turbot B Quad-Core"		
