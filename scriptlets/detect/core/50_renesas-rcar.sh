@@ -75,6 +75,12 @@ detect_renesas() {
 	local k2=$(grep OF_COMPATIBLE_1 /sys/devices/system/cpu/cpu0/uevent | cut -f2 -d',')
 	keys[cpu_compatibility]="$k1 $k2"
 
+	# detect gpu
+	keys[gpu_freq_mhz]=$(readkey /sys/class/devfreq/devfreq0/cur_freq)
+	if [ ${keys[gpu_freq_mhz]} != "unknown" ]
+	then keys[gpu_freq_mhz]=$((${keys[gpu_freq_mhz]}/1000000))
+	fi
+
 	# detect board
 	models=( $(tr '\0' '\n' </sys/firmware/devicetree/base/compatible | while IFS=',' read vendor model; do echo $model; done) )
 	keys[board_model]=$(IFS=- ; echo "${models[*]}")
